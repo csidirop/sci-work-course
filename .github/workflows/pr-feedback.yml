@@ -1,0 +1,32 @@
+name: PR feedback comment
+
+on:
+  workflow_run:
+    workflows: ["Check birth dates", "Commit Check"]
+    types: [completed]
+
+concurrency:
+  group: pr-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  comment:
+    if: ${{ github.event.workflow_run.event == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout default branch (to get the script)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.repository.default_branch }}
+
+      - name: Run PR status comment script
+        env:
+          GH_TOKEN: ${{ github.token }} # gh CLI will use this
+        run: |
+          chmod +x .github/workflows/pr-feedback-comment.sh
+          .github/workflows/pr-feedback-comment.sh
