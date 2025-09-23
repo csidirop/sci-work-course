@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency: # Only one job per PR at a time
-  group: pr-${{ github.event.pull_request.number }}
+  group: pr-${{ github.event.pull_request.number }}-a
   cancel-in-progress: true # cancel any in-progress runs when a new commit is pushed
 
 jobs:
