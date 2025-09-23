@@ -16,7 +16,8 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Fail in case of changes outside of `data/birth-dates/*.txt`
+      # Fail in case of changes outside of `data/birth-dates/*.txt`
+      - name: Restrict Changes
         run: |
           set -euo pipefail
 
