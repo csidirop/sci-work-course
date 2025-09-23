@@ -13,21 +13,20 @@ permissions:
   contents: read
 
 jobs:
-  wait-and-run: # 
+  wait-and-check: # 
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for CI to pass on this commit
+      # First, wait for the "Restrict Changes" check to complete successfully:
+      - name: Wait for "Restrict Changes" check to complete
         uses: lewagon/wait-on-check-action@v1.3.3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Restrict Changes"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 30
+          wait-interval: 5
           allowed-conclusions: success
 
-  check:
-    runs-on: ubuntu-latest
-    steps:
+      # Now check the birthdate files:
       - name: Check out PR
         uses: actions/checkout@v4
         with:
