@@ -23,7 +23,7 @@ jobs:
           set -euo pipefail
 
           BASE="${{ github.event.pull_request.base.sha }}"
-          HEAD="${{ github.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
 
           # List changed files between base and head:
           CHANGED_FILES="$(git diff --name-only "$BASE" "$HEAD")"
