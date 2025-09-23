@@ -1,4 +1,4 @@
-name: Restrict changes to "data/birth-dates/*.txt"
+name: Restrict Changes
 
 on:
   pull_request_target:
@@ -16,31 +16,29 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Fail if changes outside data/birth-dates/*.txt
+      - name: Fail in case of changes outside of `data/birth-dates/*.txt`
         run: |
           set -euo pipefail
 
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BASE="${{ github.event.pull_request.base.sha }}"
-            HEAD="${{ github.sha }}"
-          else
-            BASE="${{ github.event.before }}"
-            HEAD="${{ github.sha }}"
-          fi
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.sha }}"
 
-          CHANGED="$(git diff --name-only "$BASE" "$HEAD")"
-          echo -e "Changed files: \n${CHANGED}"
+          # List changed files between base and head:
+          CHANGED_FILES="$(git diff --name-only "$BASE" "$HEAD")"
+          echo -e "Changed files: \n${CHANGED_FILES}"
 
-          if [[ -z "${CHANGED}" ]]; then
+          if [[ -z "${CHANGED_FILES}" ]]; then
             exit 0
           fi
 
-          DISALLOWED="$(echo "${CHANGED}" | grep -Ev '^data/birth-dates/[^/]+\.txt$' || true)"
+          # Find any changed files not in the allowed path:
+          DISALLOWED_FILES="$(echo "${CHANGED_FILES}" | grep -Ev '^data/birth-dates/[^/]+\.txt$' || true)"
 
-          if [[ -n "${DISALLOWED}" ]]; then
-            echo "::error::Disallowed changes detected:"
-            echo "${DISALLOWED}"
-            echo "Only files directly under data/birth-dates/ with .txt extension may change."
+          if [[ -n "${DISALLOWED_FILES}" ]]; then
+            echo "::error::Disallowed changes detected!"
+            echo "Disallowed changes detected:" >> "$GITHUB_STEP_SUMMARY"
+            echo "${DISALLOWED_FILES}" >> "$GITHUB_STEP_SUMMARY"
+            echo "Only files directly under data/birth-dates/ with .txt extension may be edited." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
 

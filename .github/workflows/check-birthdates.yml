@@ -1,4 +1,4 @@
-name: Birthdate check
+name: Birthdate Check
 
 on:
   pull_request_target:
@@ -20,7 +20,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.3.3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          check-name: "Restrict changes to \"data/birth-dates/*.txt\""
+          check-name: "Restrict Changes"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 30
           allowed-conclusions: success
