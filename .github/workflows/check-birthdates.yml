@@ -27,6 +27,15 @@ jobs:
       - name: Use base branch script and answer key
         run: |
           set -euo pipefail
+          BASE_SHA='${{ github.event.pull_request.base.sha }}'
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          git show "$BASE_SHA:.github/workflows/validate_birthdates.sh" > .github/workflows/validate_birthdates.sh
+          git show "$BASE_SHA:.github/workflows/birthdates" > .github/workflows/birthdates
+          chmod +x .github/workflows/validate_birthdates.sh
+
+      - name: Fetch PR head commit
+        run: |
+          set -euo pipefail
           HEAD_SHA='${{ github.event.pull_request.head.sha }}'
           HEAD_REPO='${{ github.event.pull_request.head.repo.clone_url }}'
           git remote add head "$HEAD_REPO"
