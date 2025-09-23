@@ -17,6 +17,22 @@ jobs:
         with:
           fetch-depth: 1
 
+      # Check out the PR files:
+      - name: Check Out PR
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 1 # no need for full history
+
+      - name: Fetch PR head commit
+        run: |
+          set -euo pipefail
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          HEAD_REPO='${{ github.event.pull_request.head.repo.clone_url }}'
+          git remote add head "$HEAD_REPO"
+          git fetch --no-tags --depth=1 head "$HEAD_SHA"
+
       # Fail in case of changes outside of `data/birth-dates/*.txt`
       - name: Restrict Changes
         run: |
