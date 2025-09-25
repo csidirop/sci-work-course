@@ -2,11 +2,11 @@ name: PR feedback comment
 
 on:
   workflow_run:
-    workflows: ["Check birth dates", "Commit Check"]
+    workflows: ["Birthdate Check", "Restrict Changes"]
     types: [completed]
 
 concurrency:
-  group: pr-${{ github.event.workflow_run.head_sha }}
+  group: pr-${{ github.event.workflow_run.head_sha }}-c
   cancel-in-progress: true
 
 permissions:
@@ -19,14 +19,38 @@ jobs:
     if: ${{ github.event.workflow_run.event == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout default branch (to get the script)
-        uses: actions/checkout@v4
+      - name: Get PR number
+        id: pr
+        uses: actions/github-script@v6
         with:
-          ref: ${{ github.event.workflow_run.repository.default_branch }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.event.workflow_run.pull_requests[0].number,
+            });
+            return pr.data.number;
+        
+    #   - name: Checkout base branch (to get the script)
+    #     uses: actions/checkout@v4
+    #     with:
+    #     #   ref: ${{ github.event.pull_request.base.sha }}
+    #       ref: ${{ github.event.workflow_run.repository.default_branch }}
+    #       fetch-depth: 1 # no need for full history
 
-      - name: Run PR status comment script
-        env:
-          GH_TOKEN: ${{ github.token }} # gh CLI will use this
-        run: |
-          chmod +x .github/workflows/pr-feedback-comment.sh
-          .github/workflows/pr-feedback-comment.sh
+    #   - name: Run PR status comment script
+    #     env:
+    #       GH_TOKEN: ${{ github.token }}
+    #     run: |
+    #       chmod +x .github/workflows/pr-feedback-comment.sh
+    #       .github/workflows/pr-feedback-comment.sh
+
+      - name: Comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ steps.pr.outputs.number }}
+          body: |
+            <!-- pr-feedback-greet -->
+            👋 Hi! This is an automated greeting from the PR feedback workflow.
+            I’ll add richer feedback once the checks are evaluated.
