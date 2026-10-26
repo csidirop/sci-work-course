@@ -19,7 +19,7 @@ jobs:
     steps:
       # Check out only the trusted base commit. The PR's files are never placed in the working tree of this privileged pull_request_target workflow.
       - name: Check out trusted base
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           # Full history is needed to find where an older PR diverged from the current base branch.
@@ -83,7 +83,7 @@ jobs:
     steps:
       # Check out only the trusted base commit. The PR's files are never placed in the working tree of this privileged pull_request_target workflow.
       - name: Check out trusted base
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           # The validator needs the common ancestor of the base and PR commits.
