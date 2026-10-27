@@ -20,17 +20,18 @@
 
 set -euo pipefail
 
-# The workflow supplies the trusted target commit as BASE_SHA and the exact PR commit that triggered the run as HEAD_SHA. Both commits must already
-# have been fetched by the workflow before this script starts.
+# --- 1. Validate Prerequisites --- #
+
+# The workflow supplies the trusted target commit as BASE_SHA and the exact PR commit that triggered the run as HEAD_SHA:
 BASE="${BASE_SHA:-}"
 HEAD="${HEAD_SHA:-}"
-# Outside GitHub Actions there may be no summary file, so /dev/null lets the validator remain convenient to run locally.
-SUMMARY_FILE="${GITHUB_STEP_SUMMARY:-/dev/null}"
+SUMMARY_FILE="${GITHUB_STEP_SUMMARY:-/dev/null}" # Outside GitHub Actions there may be no summary file, so /dev/null lets the validator remain convenient to run locally.
 
 if [[ -z "$BASE" || -z "$HEAD" ]]; then
   echo "::error::BASE_SHA and HEAD_SHA must both be set"
   echo "❌ Validator configuration error: missing BASE_SHA or HEAD_SHA." >> "$SUMMARY_FILE"
   exit 1
+  # The workflow should have fetched them, but if the workflow is misconfigured or the repository is shallow, the commits may be missing.
 fi
 
 if ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
@@ -39,30 +40,31 @@ if ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
   exit 1
 fi
 
+# Check that the PR head commit is available. If the workflow fetches a PR branch but then the contributor force-pushes a new commit,
+# the original commit may no longer be present in the repository:
 if ! git cat-file -e "${HEAD}^{commit}" 2>/dev/null; then
   echo "::error::PR head commit ${HEAD} is not available"
   echo "❌ Validator configuration error: the PR head commit is unavailable." >> "$SUMMARY_FILE"
   exit 1
 fi
 
-# Find the common ancestor of the current base tip and the PR head. A direct
-# BASE-to-HEAD comparison would also include changes added to the base branch
-# after the contributor created their PR.
+# Find the common ancestor of the current base tip and the PR head. (A direct BASE-to-HEAD comparison would also include changes added to the
+# base branch after the contributor created their PR):
 if ! MERGE_BASE="$(git merge-base "$BASE" "$HEAD")" || [[ -z "$MERGE_BASE" ]]; then
   echo "::error::Could not find a common ancestor for the base and PR commits"
   echo "❌ Validator configuration error: could not determine the PR's merge base." >> "$SUMMARY_FILE"
   exit 1
 fi
 
-# Keep only birthdate files changed by the PR itself. The separate restriction
-# job rejects changes elsewhere; this script enforces the exercise-specific
-# "exactly one birthdate file" rule.
+# Keep only birthdate files changed by the PR itself ( -> "exactly one birthdate file"):
 if ! changed_files="$(git diff --name-only "$MERGE_BASE" "$HEAD" -- 'data/birth-dates/*.txt' | tr -d '\r')"; then
   echo "::error::Could not determine the changed birthdate files"
   echo "❌ Could not determine the changed birthdate files." >> "$SUMMARY_FILE"
   exit 1
 fi
 mapfile -t files < <(printf '%s' "$changed_files")
+
+# --- 2. Validate the PR submission --- #
 
 # Enforce exactly one changed file:
 count=${#files[@]}
@@ -140,6 +142,8 @@ receivedLine="$(
   | tr -d '\r' \
   | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
 )"
+
+# --- 3. Compare Submitted and Expected Content --- #
 
 # Compare the normalized submitted line with the normalized answer-key value and put the useful details in the GitHub Actions summary:
 if [[ "$receivedLine" == "$expectedLine" ]]; then
